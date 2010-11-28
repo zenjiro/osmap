@@ -9,14 +9,21 @@ import java.awt.event.MouseEvent;
 import java.awt.event.MouseMotionListener;
 import java.awt.event.MouseWheelEvent;
 import java.awt.event.MouseWheelListener;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Formatter;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Properties;
+import java.util.Timer;
 import java.util.TimerTask;
 
 import javax.imageio.IIOException;
@@ -38,6 +45,10 @@ public class Main {
 	 * キャッシュファイルを置くディレクトリ
 	 */
 	public static String CACHE_DIRECTORY = "cache";
+	/**
+	 * 設定ファイルの名前
+	 */
+	public static String CONFIGURATION_FILE = "osmap.ini";
 	/**
 	 * 縮尺
 	 */
@@ -73,8 +84,20 @@ public class Main {
 	 * @throws IOException 入出力例外
 	 */
 	public static void main(final String[] args) throws IOException {
+		final Properties properties = new Properties();
+		try {
+			properties.load(new FileInputStream(CONFIGURATION_FILE));
+			zoom = properties.containsKey("zoom") ? Integer.parseInt(properties.getProperty("zoom")) : zoom;
+			col = properties.containsKey("col") ? Integer.parseInt(properties.getProperty("col")) : col;
+			row = properties.containsKey("row") ? Integer.parseInt(properties.getProperty("row")) : row;
+			offsetX = properties.containsKey("offsetX") ? Integer.parseInt(properties.getProperty("offsetX")) : offsetX;
+			offsetY = properties.containsKey("offsetY") ? Integer.parseInt(properties.getProperty("offsetY")) : offsetY;
+		} catch (final FileNotFoundException exception) {
+			// do nothing
+		}
 		final Map<String, Image> images = new HashMap<String, Image>();
 		final JFrame frame = new JFrame("OSMap");
+		final Timer timer = new Timer();
 		frame.setLayout(new BorderLayout());
 		final JLabel label = new JLabel(" ");
 		final JPanel panel = new JPanel() {
@@ -163,11 +186,27 @@ public class Main {
 			}
 		});
 		frame.pack();
-		frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
+		frame.addWindowListener(new WindowAdapter() {
+			@Override
+			public void windowClosed(final WindowEvent event) {
+				timer.cancel();
+				try {
+					properties.put("zoom", Integer.toString(zoom));
+					properties.put("col", Integer.toString(col));
+					properties.put("row", Integer.toString(row));
+					properties.put("offsetX", Integer.toString(offsetX));
+					properties.put("offsetY", Integer.toString(offsetY));
+					properties.store(new FileWriter(CONFIGURATION_FILE), "OSMap configuration");
+				} catch (final IOException exception) {
+					exception.printStackTrace();
+				}
+			}
+		});
+		frame.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
 		JFrame.setDefaultLookAndFeelDecorated(true);
 		frame.setLocationByPlatform(true);
 		frame.setVisible(true);
-		new java.util.Timer().scheduleAtFixedRate(new TimerTask() {
+		timer.scheduleAtFixedRate(new TimerTask() {
 			@Override
 			public void run() {
 				if (offsetX < 0) {
