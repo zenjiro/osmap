@@ -1,5 +1,4 @@
 import java.awt.BorderLayout;
-import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Image;
@@ -52,23 +51,23 @@ public class Main {
 	/**
 	 * 縮尺
 	 */
-	static int zoom = 5;
+	static int zoom;
 	/**
 	 * 列
 	 */
-	static int col = 27;
+	static int col;
 	/**
 	 * 行
 	 */
-	static int row = 12;
+	static int row;
 	/**
 	 * x座標
 	 */
-	static int offsetX = 20;
+	static int offsetX;
 	/**
 	 * y座標
 	 */
-	static int offsetY = 150;
+	static int offsetY;
 	/**
 	 * マウスドラッグが開始されたx座標
 	 */
@@ -87,14 +86,14 @@ public class Main {
 		final Properties properties = new Properties();
 		try {
 			properties.load(new FileInputStream(CONFIGURATION_FILE));
-			zoom = properties.containsKey("zoom") ? Integer.parseInt(properties.getProperty("zoom")) : zoom;
-			col = properties.containsKey("col") ? Integer.parseInt(properties.getProperty("col")) : col;
-			row = properties.containsKey("row") ? Integer.parseInt(properties.getProperty("row")) : row;
-			offsetX = properties.containsKey("offsetX") ? Integer.parseInt(properties.getProperty("offsetX")) : offsetX;
-			offsetY = properties.containsKey("offsetY") ? Integer.parseInt(properties.getProperty("offsetY")) : offsetY;
 		} catch (final FileNotFoundException exception) {
 			// do nothing
 		}
+		zoom = Integer.parseInt(properties.getProperty("zoom", "5"));
+		col = Integer.parseInt(properties.getProperty("col", "27"));
+		row = Integer.parseInt(properties.getProperty("row", "12"));
+		offsetX = Integer.parseInt(properties.getProperty("offsetX", "20"));
+		offsetY = Integer.parseInt(properties.getProperty("offsetY", "150"));
 		final Map<String, Image> images = new HashMap<String, Image>();
 		final JFrame frame = new JFrame("OSMap");
 		final Timer timer = new Timer();
@@ -126,7 +125,6 @@ public class Main {
 						zoom, col, row, offsetX, offsetY).toString());
 			}
 		};
-		panel.setPreferredSize(new Dimension(640, 480));
 		frame.add(panel, BorderLayout.CENTER);
 		frame.add(label, BorderLayout.SOUTH);
 		panel.addMouseWheelListener(new MouseWheelListener() {
@@ -185,7 +183,9 @@ public class Main {
 				panel.repaint();
 			}
 		});
-		frame.pack();
+		frame.setExtendedState(Integer.parseInt(properties.getProperty("frame.extendedState", "0")));
+		frame.setSize(Integer.parseInt(properties.getProperty("frame.width", "800")),
+				Integer.parseInt(properties.getProperty("frame.height", "600")));
 		frame.addWindowListener(new WindowAdapter() {
 			@Override
 			public void windowClosed(final WindowEvent event) {
@@ -196,6 +196,11 @@ public class Main {
 					properties.put("row", Integer.toString(row));
 					properties.put("offsetX", Integer.toString(offsetX));
 					properties.put("offsetY", Integer.toString(offsetY));
+					properties.put("frame.extendedState", Integer.toString(frame.getExtendedState()));
+					if (frame.getExtendedState() == 0) {
+						properties.put("frame.width", Integer.toString(frame.getWidth()));
+						properties.put("frame.height", Integer.toString(frame.getHeight()));
+					}
 					properties.store(new FileWriter(CONFIGURATION_FILE), "OSMap configuration");
 				} catch (final IOException exception) {
 					exception.printStackTrace();
